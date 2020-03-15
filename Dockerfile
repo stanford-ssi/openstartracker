@@ -16,7 +16,7 @@ RUN apt-get install -y python3-scipy libopencv-dev python3-opencv \
                        python3-astropy python3-pkgconfig \
                        python3-dev libpython3.7-dev libpython3.8-dev
 
-# clone the repo
-RUN git clone https://github.com/stanford-ssi/openstartracker.git
+# copy everything into the virtual filesystem
+COPY . .
 
-WORKDIR openstartracker/tests/
+WORKDIR tests
