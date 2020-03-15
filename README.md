@@ -1,31 +1,46 @@
 # openstartracker
-A fast, robust, open source startracker based on a new class of baysian startracker algorithms
+A fast, robust, open-source startracker based on a new class of Bayesian startracker algorithms. Modified by SSI.
 
 Features:
 
-* Fast lost in space identification
-* Image to image matching
+* Fast lost-in-space identification
+* Image-to-image matching
 * Collect and store size, shape and color information of unknown objects
-* Tracks unknown objects between images
-* Programable python frontend / reusable C++ backend (BEAST-2) with no external dependencies 
+* Track unknown objects between images
+* Programmable python frontend / reusable C++ backend (BEAST-2) with no external dependencies 
 * Uses astrometry.net for calibration (check if your camera is good enough by uploading your star images to nova.astrometry.net)
 * Supports python 2 and 3 (see bottom)
 
 ### Basic setup:
 
+#### Getting started using Docker
 
-##### From a fresh xubuntu 16.04 linux install
+Install [Docker](https://docs.docker.com/install/) first, if you don't have it on your machine. Watch [this video](https://www.youtube.com/watch?v=6aBsjT5HoGY) on Docker to familiarize yourself with what it does first (most important is 0:00-15:00). We have to use Docker because this code necessitates a certain configuration; it probably won't immediately work on your machine.
+
+Clone this repo and go to its root directory
+
 ```
-sudo apt-get install python-scipy libopencv-dev python-opencv swig python-systemd
+git clone https://github.com/stanford-ssi/openstartracker.git && cd openstartracker
 ```
 
-Additional packages needed for calibration and unit testing:
+Run the Dockerfile to build your image
+
+```
+docker build -t startracker1 .
+```
+
+Now you can run the Docker image, marking `-it` for interactive
+
+```
+docker run -it startracker1
+```
+#### Additional packages needed for calibration and unit testing
+
+Download fits files corresponding to your camera fov size (see astrometry.net for details)
+
 ~~~~
-sudo apt-get install git astrometry.net python-astropy
-
 cd /usr/share/astrometry
 
-Download fits files corresponding to your camera fov size (see astrometry.net for details
 sudo wget http://data.astrometry.net/4100/index-4112.fits
 sudo wget http://data.astrometry.net/4100/index-4113.fits
 sudo wget http://data.astrometry.net/4100/index-4114.fits
@@ -34,44 +49,30 @@ sudo wget http://data.astrometry.net/4100/index-4116.fits
 sudo wget http://data.astrometry.net/4100/index-4117.fits
 sudo wget http://data.astrometry.net/4100/index-4118.fits
 sudo wget http://data.astrometry.net/4100/index-4119.fits
+~~~~
 
-git clone https://github.com/UBNanosatLab/openstartracker.git
+Now run the unit test
 
-cd openstartracker/tests
+~~~~
+cd /home/openstartracker/tests
 ./unit_test.sh -crei science_cam_may8_0.05sec_gain40
-
 ~~~~
+
 ##### To calibrate a new camera:
+
 ~~~~
-cd openstartracker/
+cd /home/openstartracker/
 mkdir yourcamera
-mkdir yourcamera/samples
-mkdir yourcamera/calibration_data
+cd yourcamera && mkdir samples calibration_data
 ~~~~
-add 3-10 star images of different parts of the sky taken with your camera to yourcamera/samples
 
-edit APERTURE and EXPOSURE_TIME in calibrate.py (you want to take images with the lowest exposure time that consistently solves)
+1. Add 3-10 star images of different parts of the sky taken with your camera to `yourcamera/samples`.
 
+2. Edit `APERTURE` and `EXPOSURE_TIME` in `calibrate.py` (you want to take images with the lowest exposure time that consistently solves)
 
-run ./unit_test.sh -crei yourcamera to recalibrate and test
+3. Run `./unit_test.sh -crei yourcamera` to recalibrate and test.
 
-The ESA test should have a score of >70. If its worse than this, play around with exposure time (50ms is a good starting point)
-
-##### Python 3 support:
-
-To enable python 3, you will need to edit 2 lines in two files:
-
-beast/Makefile: PYTHONHEADERS=... 
-
-tests/unit_test.sh: PYTHON=...
-
-for python 3 you may need to install the python 3 versions of the dependencies - ie
-
-~~~~
-sudo apt-get python3-scipy python3-systemd python3-pip
-sudo -H pip3 install opencv-python
-sudo -H pip3 install astropy
-~~~~
+The ESA test should have a score of >70. If it's worse than this, play around with exposure time (50ms is a good starting point).
 
 ##### Reference frames used:
 
