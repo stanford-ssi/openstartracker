@@ -5,7 +5,6 @@ REGENERATE=0
 ESA_TEST=0
 IMG_TEST=0
 
-#PYTHON="/usr/bin/python2.7"
 PYTHON="/usr/bin/python3.6"
 
 while getopts ":crei" opt; do
@@ -40,6 +39,7 @@ while getopts ":crei" opt; do
 done
 shift "$[$OPTIND-1]"
 
+echo "line 42 rn"
 pushd "`dirname $0`">/dev/null
 
 TESTDIR="$1"
@@ -82,7 +82,7 @@ if [[ $IMG_TEST == 1 ]]; then
 	$@ $PYTHON startracker.py $TESTDIR/calibration.txt 1991.25 $TESTDIR/median_image.png &
 	KILLPID="$!"
 	sleep 10
-	#make sure we dont crash when given an image w/ no stars
+	# make sure we dont crash when given an image w/ no stars
 	echo "rgb.solve_image('$TESTDIR/median_image.png')" | nc 127.0.0.1 8010
 	sleep 0.5
 	for i in $TESTDIR/samples/*; do
@@ -91,8 +91,6 @@ if [[ $IMG_TEST == 1 ]]; then
 		echo "rgb.solve_image('$i')" | nc 127.0.0.1 8010
 		sleep 0.5
 	done
-  #sleep 0.5
-  #echo 'exception test' | nc 127.0.0.1 8010
   sleep 0.5
 	echo 'quit()' | nc 127.0.0.1 8010
 fi
