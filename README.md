@@ -35,6 +35,16 @@ This script will not only set up our Docker image, but will also create a succin
 
 Doing this is recommended because changes in the native file system will transfer over to the Docker container with less hassle.
 
+Now, to run any file,
+
+```
+dstart
+cd tests
+./unit_test.sh -crei science_cam_may8_0.05sec_gain40
+```
+
+An important thing to keep in mind is to *edit on your local machine* and *run in the Docker container with* `dstart`.
+
 ### Manually
 
 Run the Dockerfile to build your image
@@ -68,7 +78,8 @@ sudo wget http://data.astrometry.net/4100/index-4119.fits
 Now run the unit test
 
 ~~~~
-cd /home/openstartracker/tests
+dstart
+cd tests
 ./unit_test.sh -crei science_cam_may8_0.05sec_gain40
 ~~~~
 
