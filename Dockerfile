@@ -19,4 +19,4 @@ RUN apt-get install -y python3-scipy libopencv-dev python3-opencv \
 # copy everything into the virtual filesystem
 COPY . .
 
-WORKDIR tests
+#WORKDIR tests
