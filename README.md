@@ -46,7 +46,7 @@ docker build -t startracker1 .
 Now you can run the Docker image, marking `-it` for interactive
 
 ```
-docker run -it --mount source:[openstartracker directory path on your machine],target=/ startracker1
+docker run -it --name startracker1 --mount source:[openstartracker directory path on your machine],target=/
 ```
 #### Additional packages needed for calibration and unit testing
 
