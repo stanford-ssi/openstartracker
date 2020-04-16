@@ -15,8 +15,3 @@ RUN apt-get install -y python3-scipy libopencv-dev python3-opencv \
                        swig python3-systemd git astrometry.net \
                        python3-astropy python3-pkgconfig \
                        python3-dev libpython3.7-dev libpython3.8-dev
-
-# copy everything into the virtual filesystem
-COPY . .
-
-#WORKDIR tests

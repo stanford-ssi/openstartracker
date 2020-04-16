@@ -23,6 +23,20 @@ Clone this repo and go to its root directory
 git clone https://github.com/stanford-ssi/openstartracker.git && cd openstartracker
 ```
 
+### With pre-written script (recommended)
+
+Run the `setup.sh` script specifically as below
+
+```
+source setup.sh
+```
+
+This script will not only set up our Docker image, but will also create a succinct alias command `$ dstart` that we can use to enter the Docker container (rather than typing the excessively long command).
+
+Doing this is recommended because changes in the native file system will transfer over to the Docker container with less hassle.
+
+### Manually
+
 Run the Dockerfile to build your image
 
 ```
@@ -32,7 +46,7 @@ docker build -t startracker1 .
 Now you can run the Docker image, marking `-it` for interactive
 
 ```
-docker run -it startracker1
+docker run -it --mount source:[openstartracker directory path on your machine],target=/ startracker1
 ```
 #### Additional packages needed for calibration and unit testing
 
