@@ -1,0 +1,4 @@
+# stuff to ignore
+*.swp
+*.zip
+*.pyc
