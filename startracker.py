@@ -8,7 +8,7 @@ TODO:
 - remove print statements and replace with some logging system
 - deal with the assert statements somehow
 - isolate constants to outside of the main loop somehow
-- eliminate global variables from the program
+- eliminate global variables from the program (and refactor to pass them between methods)
 - refactor into other files (with frequently used utility functions)
 - fix open filestreams and use with statements instead
 - fix unit_test.sh to account for the argparse changes
@@ -22,8 +22,8 @@ import time
 
 # I/O stuff
 import sys, traceback
-import socket,select, os, gc
-from io import StringIO,BytesIO
+import socket, select, os, gc
+from io import StringIO, BytesIO
 import fcntl
 import beast  # for calling methods implemented in C
 from systemd import daemon
@@ -50,10 +50,19 @@ def trace(frame, event, arg):
 # quaternions and orthogonal rotation matrices. For more info
 # about this, check out
 # https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+# http://graphics.stanford.edu/courses/cs348a-17-winter/Papers/quaternion.pdf
 
 def a2q(A):
     """Convert an orthogonal 3x3 matrix A to its
-    quaternion representation.
+    quaternion representation. Note: I'm unsure
+    about what the convention is here because
+    I tried this out and it didn't give me what
+    I expected to see. (tried rotation by
+    pi/2 on the cartesian plane, but it gave me
+    the axis (q1, q2, q3) as [0, -.707, .707])
+
+    Potentially useful for reverse-engineering this:
+    https://math.stackexchange.com/questions/893984/conversion-of-rotation-matrix-to-quaternion
 
     Input:
         A: 3x3 orthogonal matrix
@@ -77,15 +86,15 @@ def q2a(q):
         A: 3x3 orthogonal matrix representing q
     """
     q = q / np.linalg.norm(q)
-    return np.array([[q[0]**2-q[1]**2-q[2]**2+q[3]**2
-                      2*(q[0]*q[1]+q[2]*q[3]),
-                      2*(q[0]*q[2]-q[1]*q[3])],
-                     [2*(q[0]*q[1]-q[2]*q[3]),
-                      -q[0]**2+q[1]**2-q[2]**2+q[3]**2,
-                      2*(q[1]*q[2]+q[0]*q[3])],
-                      [2*(q[0]*q[2]+q[1]*q[3]),
-                      2*(q[1]*q[2]-q[0]*q[3]),
-                      -q[0]**2-q[1]**2+q[2]**2+q[3]**2]])
+    return np.array([[q[0]**2 - q[1]**2 - q[2]**2 + q[3]**2
+                      2 * (q[0] * q[1] + q[2] * q[3]),
+                      2 * (q[0] * q[2] - q[1] * q[3])],
+                     [2 * (q[0] * q[1] - q[2] * q[3]),
+                      -q[0]**2 + q[1]**2 - q[2]**2 + q[3]**2,
+                      2 * (q[1] * q[2] + q[0] * q[3])],
+                      [2 * (q[0] * q[2] + q[1] * q[3]),
+                      2 * (q[1] * q[2] - q[0] * q[3]),
+                      -q[0]**2 - q[1]**2 + q[2]**2 + q[3]**2]])
 
 def extrapolate_matrix(A, B, t1, t2, t3):
     """What does this do??? TBD
@@ -481,7 +490,7 @@ def flush_nonstars():
     gc.collect()
     NONSTAR_DATAFILE.close()
     NONSTAR_DATAFILENAME = "data{}.txt".format(time.time())  # change this, it's needlessly specific
-    NONSTAR_DATAFILE=open(NONSTAR_DATAFILENAME,"w")
+    NONSTAR_DATAFILE = open(NONSTAR_DATAFILENAME, "w")
     
 def update_nonstars(current_image, source):
     global NONSTARS, NONSTAR_NEXT_ID
@@ -497,31 +506,31 @@ def update_nonstars(current_image, source):
             im.get_star(i).id = db_lm.get_star(i).id
     for i in range(im.size()):
         s_im = im.get_star(i)
-        #is this a star? if so remove from nonstars
+        # is this a star? if so remove from nonstars
         if db != None and db.get_star(i).id >= 0:
             if s_im.id in NONSTARS:
                 del NONSTARS[s_im.id]
             s_im.id = -1
-        #if it's already there, add the latest mesurement
+        # if it's already there, add the latest mesurement
         elif s_im.id in NONSTARS:
             NONSTARS[s_im.id].add_data(current_image, i, source)
             nonstars_next[s_im.id] = NONSTARS[s_im.id]
-        #otherwise add a new nonstar
+        # otherwise add a new nonstar
         else:
             ns = NonStar(current_image, i, source)
             nonstars_next[ns.id] = ns
     NONSTARS = nonstars_next
     
-    #wrap around to prevent integer overflow
+    # wrap around to prevent integer overflow
     if (NONSTAR_NEXT_ID > 2**30):
         flush_nonstars()
 
 def winner_attitude(w):
     """Encodes winner w as a matrix. What is w??? TBD"""
-    eci2body = np.array([[w.R11, w.R12, w.R13],
-                         [w.R21, w.R22, w.R23],
-                         [w.R31, w.R32, w.R33]])
-    return eci2body.T
+    eci2body = np.array([[w.R11, w.R21, w.R31],
+                         [w.R12, w.R22, w.R32],
+                         [w.R13, w.R23, w.R33]])
+    return eci2body
 
 def main():
     """Main Function."""
@@ -536,7 +545,7 @@ def main():
     YEAR = args.year
     MEDIAN_FILE = args.median
 
-    #set up server before we do anything else
+    # set up server before we do anything else
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -564,8 +573,8 @@ def main():
     C_DB = beast.constellation_db(S_FILTERED, 2 + beast.cvar.DB_REDUNDANCY, 0)
     print("Ready")
 
-    #Note: SWIG's policy is to garbage collect objects created with
-    #constructors, but not objects created by returning from a function
+    # Note: SWIG's policy is to garbage collect objects created with
+    # constructors, but not objects created by returning from a function
 
     NONSTARS = {}
     NONSTAR_NEXT_ID = 0
@@ -584,18 +593,20 @@ def main():
     epoll.register(server.fileno(), select.EPOLLIN)
 
     try:
-        Connection(sys.stdin,epoll)
+        Connection(sys.stdin, epoll)
     except IOError:
         pass
 
+    # unsure what the loop here is doing exactly, will look into
+    # daemon, socket, etc. packages
     daemon.notify("WATCHDOG=1")
-    lastPing = time.time()
+    last_ping = time.time()
     while True:
         #systemd watchdog
-        events = epoll.poll(float(os.environ['WATCHDOG_USEC']) / 2.0e6 - (time.time() - lastPing))
-        if len(events) == 0 or time.time() >= (lastPing + float(os.environ['WATCHDOG_USEC'])/2.0e6):
+        events = epoll.poll(float(os.environ['WATCHDOG_USEC']) / 2.0e6 - (time.time() - last_ping))
+        if len(events) == 0 or time.time() >= (last_ping + float(os.environ['WATCHDOG_USEC']) / 2.0e6):
             daemon.notify("WATCHDOG=1")
-            lastPing = time.time()
+            last_ping = time.time()
         #events = epoll.poll()
         for fd, event_type in events:
             # Activity on the master socket means a new connection.
@@ -607,7 +618,7 @@ def main():
                 data = w.read()
                 print(data.decode(encoding='UTF-8'), file=sys.stderr)
                 if len(data) > 0:
-                    if sys.version_info[0]>2:
+                    if sys.version_info[0] > 2:
                         stdout_redir = StringIO()
                     else:
                         stdout_redir = BytesIO()
